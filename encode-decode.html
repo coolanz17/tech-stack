@@ -1,0 +1,137 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Encoder & Decoder</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</head>
+<body class="bg-gray-50 p-6 md:p-8 h-screen overflow-y-auto font-sans text-gray-800">
+
+    <div class="max-w-6xl mx-auto flex flex-col h-full space-y-4">
+        
+        <div class="flex justify-between items-end">
+            <div>
+                <h2 class="text-2xl font-bold text-gray-800">Encoder / Decoder</h2>
+                <p class="text-sm text-gray-500 mt-1">Convert text between different encoding formats.</p>
+            </div>
+            
+            <div class="flex space-x-4 bg-white p-2 rounded-lg border border-gray-200 shadow-sm">
+                <select id="conversion-type" class="border-none bg-transparent text-sm font-semibold focus:ring-0 cursor-pointer outline-none">
+                    <option value="base64">Base64</option>
+                    <option value="url">URL (Percent-encoding)</option>
+                </select>
+                <div class="border-l border-gray-300 w-1"></div>
+                <div class="flex bg-gray-100 rounded p-1">
+                    <button id="btn-encode" class="px-4 py-1 text-xs font-bold rounded shadow-sm bg-white text-indigo-600 transition-all">Encode</button>
+                    <button id="btn-decode" class="px-4 py-1 text-xs font-medium rounded text-gray-500 hover:text-gray-800 transition-all">Decode</button>
+                </div>
+            </div>
+        </div>
+
+        <div class="flex-1 grid grid-cols-1 md:grid-cols-2 gap-4">
+            
+            <div class="bg-white rounded-lg shadow-sm border border-gray-200 flex flex-col overflow-hidden">
+                <div class="bg-gray-50 border-b border-gray-200 px-4 py-2 flex justify-between items-center">
+                    <span class="text-xs font-bold text-gray-500 uppercase tracking-wider">Input</span>
+                    <button id="clear-input" class="text-gray-400 hover:text-red-500 text-xs"><i class="fa-solid fa-trash mr-1"></i> Clear</button>
+                </div>
+                <textarea id="input-text" class="flex-1 w-full p-4 font-mono text-sm resize-none focus:outline-none focus:ring-2 focus:ring-inset focus:ring-indigo-500" placeholder="Type or paste your text here..."></textarea>
+            </div>
+
+            <div class="bg-white rounded-lg shadow-sm border border-gray-200 flex flex-col overflow-hidden relative">
+                <div class="bg-indigo-50 border-b border-indigo-100 px-4 py-2 flex justify-between items-center">
+                    <span class="text-xs font-bold text-indigo-600 uppercase tracking-wider">Output</span>
+                    <button id="copy-output" class="text-indigo-500 hover:text-indigo-700 text-xs font-medium"><i class="fa-regular fa-copy mr-1"></i> Copy</button>
+                </div>
+                <textarea id="output-text" readonly class="flex-1 w-full p-4 font-mono text-sm bg-gray-50 text-gray-700 resize-none outline-none border-transparent"></textarea>
+                
+                <div id="error-overlay" class="hidden absolute inset-0 bg-white/90 backdrop-blur-sm flex flex-col items-center justify-center text-red-500 z-10 pt-10">
+                    <i class="fa-solid fa-circle-exclamation text-4xl mb-3"></i>
+                    <p class="font-semibold" id="error-message">Invalid Input</p>
+                </div>
+            </div>
+
+        </div>
+    </div>
+
+    <script>
+        const inputStr = document.getElementById('input-text');
+        const outputStr = document.getElementById('output-text');
+        const typeSelect = document.getElementById('conversion-type');
+        const btnEncode = document.getElementById('btn-encode');
+        const btnDecode = document.getElementById('btn-decode');
+        const errorOverlay = document.getElementById('error-overlay');
+        const errorMsg = document.getElementById('error-message');
+        const btnCopy = document.getElementById('copy-output');
+
+        let mode = 'encode'; // 'encode' or 'decode'
+
+        // Switch Modes visually
+        function setMode(newMode) {
+            mode = newMode;
+            if (mode === 'encode') {
+                btnEncode.className = "px-4 py-1 text-xs font-bold rounded shadow-sm bg-white text-indigo-600 transition-all";
+                btnDecode.className = "px-4 py-1 text-xs font-medium rounded text-gray-500 hover:text-gray-800 transition-all";
+            } else {
+                btnDecode.className = "px-4 py-1 text-xs font-bold rounded shadow-sm bg-white text-indigo-600 transition-all";
+                btnEncode.className = "px-4 py-1 text-xs font-medium rounded text-gray-500 hover:text-gray-800 transition-all";
+            }
+            processText(); // Re-process current text on swap
+        }
+
+        btnEncode.addEventListener('click', () => setMode('encode'));
+        btnDecode.addEventListener('click', () => setMode('decode'));
+        typeSelect.addEventListener('change', processText);
+        inputStr.addEventListener('input', processText);
+
+        function processText() {
+            const text = inputStr.value;
+            const type = typeSelect.value;
+            errorOverlay.classList.add('hidden');
+
+            if (!text) {
+                outputStr.value = '';
+                return;
+            }
+
+            try {
+                if (type === 'base64') {
+                    if (mode === 'encode') {
+                        // Safe UTF-8 Base64 Encoding
+                        outputStr.value = btoa(unescape(encodeURIComponent(text)));
+                    } else {
+                        // Safe UTF-8 Base64 Decoding
+                        outputStr.value = decodeURIComponent(escape(atob(text)));
+                    }
+                } else if (type === 'url') {
+                    if (mode === 'encode') {
+                        outputStr.value = encodeURIComponent(text);
+                    } else {
+                        outputStr.value = decodeURIComponent(text);
+                    }
+                }
+            } catch (e) {
+                outputStr.value = '';
+                errorOverlay.classList.remove('hidden');
+                errorMsg.textContent = `Unable to ${mode} valid ${type.toUpperCase()}`;
+            }
+        }
+
+        // Utilities
+        document.getElementById('clear-input').addEventListener('click', () => {
+            inputStr.value = '';
+            processText();
+        });
+
+        btnCopy.addEventListener('click', () => {
+            outputStr.select();
+            document.execCommand('copy');
+            const originalText = btnCopy.innerHTML;
+            btnCopy.innerHTML = '<i class="fa-solid fa-check mr-1"></i> Copied!';
+            setTimeout(() => btnCopy.innerHTML = originalText, 2000);
+        });
+    </script>
+</body>
+</html>
