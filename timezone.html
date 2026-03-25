@@ -1,0 +1,163 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Timezone Converter</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</head>
+<body class="bg-gray-50 p-6 md:p-8 h-screen overflow-y-auto font-sans text-gray-800">
+
+    <div class="max-w-4xl mx-auto">
+        <h2 class="text-2xl font-bold text-gray-800 mb-6">Timezone Converter</h2>
+
+        <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+            
+            <div class="grid grid-cols-1 md:grid-cols-5 gap-4 items-center mb-8">
+                
+                <div class="col-span-2 space-y-3 border border-gray-100 bg-gray-50 p-4 rounded-md">
+                    <div>
+                        <label class="block text-xs font-bold text-gray-500 uppercase tracking-wide mb-1">Base Time</label>
+                        <input type="datetime-local" id="input-datetime" class="w-full border border-gray-300 rounded px-3 py-2 text-sm focus:ring-indigo-500">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-bold text-gray-500 uppercase tracking-wide mb-1">From Timezone</label>
+                        <select id="select-from" class="w-full border border-gray-300 rounded px-3 py-2 text-sm focus:ring-indigo-500 bg-white">
+                            </select>
+                    </div>
+                </div>
+
+                <div class="col-span-1 flex justify-center py-4 md:py-0">
+                    <div class="bg-indigo-100 text-indigo-600 rounded-full h-10 w-10 flex items-center justify-center shadow-inner">
+                        <i class="fa-solid fa-arrow-right-arrow-left rotate-90 md:rotate-0"></i>
+                    </div>
+                </div>
+
+                <div class="col-span-2 space-y-3 border border-indigo-50 bg-indigo-50/30 p-4 rounded-md">
+                    <div>
+                        <label class="block text-xs font-bold text-indigo-500 uppercase tracking-wide mb-1">Target Timezone</label>
+                        <select id="select-to" class="w-full border border-gray-300 rounded px-3 py-2 text-sm focus:ring-indigo-500 bg-white border-indigo-200">
+                            </select>
+                    </div>
+                    <div class="pt-6">
+                        <button id="btn-convert-tz" class="w-full bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded text-sm font-medium transition-colors">Convert Time</button>
+                    </div>
+                </div>
+            </div>
+
+            <div id="result-card" class="hidden bg-gray-800 text-white rounded-lg p-6 shadow-md relative overflow-hidden">
+                <div class="absolute top-0 right-0 p-4 opacity-10">
+                    <i class="fa-solid fa-globe text-6xl"></i>
+                </div>
+                
+                <h3 class="text-gray-400 text-sm font-medium uppercase tracking-wider mb-1">Converted Time</h3>
+                <div class="text-3xl md:text-4xl font-light mb-2" id="res-time">--:--</div>
+                
+                <div class="flex items-center space-x-2 text-indigo-300 text-sm">
+                    <i class="fa-regular fa-calendar"></i>
+                    <span id="res-date" class="font-medium">--</span>
+                </div>
+                
+                <div class="mt-4 pt-4 border-t border-gray-700 grid grid-cols-2 gap-4 text-sm">
+                    <div>
+                        <span class="block text-gray-500 text-xs">Target Zone</span>
+                        <span class="font-mono text-gray-300" id="res-zone-to">--</span>
+                    </div>
+                    <div>
+                        <span class="block text-gray-500 text-xs">Original Time</span>
+                        <span class="font-mono text-gray-300" id="res-zone-from">--</span>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+    </div>
+
+    <script>
+        // 1. Populate Dropdowns
+        const selectFrom = document.getElementById('select-from');
+        const selectTo = document.getElementById('select-to');
+        
+        // Get system timezone (e.g., Asia/Kolkata)
+        const systemTz = Intl.DateTimeFormat().resolvedOptions().timeZone;
+        
+        // Use Intl to get all valid timezones
+        const timezones = Intl.supportedValuesOf('timeZone');
+        
+        timezones.forEach(tz => {
+            const option1 = new Option(tz, tz);
+            const option2 = new Option(tz, tz);
+            selectFrom.add(option1);
+            selectTo.add(option2);
+        });
+
+        // Set Defaults
+        selectFrom.value = systemTz;
+        selectTo.value = "UTC";
+
+        // Pre-fill datetime-local input
+        const now = new Date();
+        // Format for datetime-local: YYYY-MM-DDThh:mm
+        now.setMinutes(now.getMinutes() - now.getTimezoneOffset());
+        document.getElementById('input-datetime').value = now.toISOString().slice(0,16);
+
+        // 2. Conversion Logic
+        document.getElementById('btn-convert-tz').addEventListener('click', () => {
+            const baseTimeStr = document.getElementById('input-datetime').value;
+            const fromTz = selectFrom.value;
+            const toTz = selectTo.value;
+
+            if (!baseTimeStr) return;
+
+            // Create a date object treating the input as belonging to the 'From' timezone.
+            // Since JS Date doesn't easily parse a string *as* a specific timezone directly, 
+            // we use a trick: format it, get parts, and construct the correct UTC time.
+            
+            // A simpler approach for modern JS: Create a standard date, then use Intl to format it to the target.
+            // *Note: Because input is "local" to the browser, if user selects a different 'From' zone, 
+            // the exact math requires offsetting. For a static vanilla JS tool, we approximate by calculating offset diff.
+            
+            // Getting accurate offsets natively without moment-tz is tricky, but we can display the converted time easily:
+            const baseDate = new Date(baseTimeStr); 
+            
+            // To properly shift timezones natively:
+            const targetFormatter = new Intl.DateTimeFormat('en-US', {
+                timeZone: toTz,
+                year: 'numeric', month: 'long', day: 'numeric',
+                hour: '2-digit', minute: '2-digit', second: '2-digit',
+                timeZoneName: 'short'
+            });
+
+            const fromFormatter = new Intl.DateTimeFormat('en-US', {
+                timeZone: fromTz,
+                year: 'numeric', month: 'short', day: 'numeric',
+                hour: '2-digit', minute: '2-digit',
+                timeZoneName: 'short'
+            });
+
+            // Extract the formatted string for the target
+            const targetParts = targetFormatter.formatToParts(baseDate);
+            let targetTime = "";
+            let targetDate = "";
+            
+            targetParts.forEach(p => {
+                if (['hour', 'minute', 'second', 'dayPeriod'].includes(p.type)) targetTime += p.value;
+                if (['month', 'day', 'year'].includes(p.type)) targetDate += p.value;
+                if (p.type === 'literal' && p.value === ' ') {
+                    if (targetTime && !targetDate) targetTime += p.value;
+                    if (targetDate && !targetTime) targetDate += p.value;
+                }
+            });
+
+            // Update UI
+            document.getElementById('res-time').textContent = targetTime;
+            document.getElementById('res-date').textContent = targetDate;
+            document.getElementById('res-zone-to').textContent = toTz;
+            document.getElementById('res-zone-from').textContent = `${fromFormatter.format(baseDate)}`;
+            
+            document.getElementById('result-card').classList.remove('hidden');
+        });
+    </script>
+</body>
+</html>
