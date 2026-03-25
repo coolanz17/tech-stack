@@ -1,0 +1,132 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Epoch Converter</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</head>
+<body class="bg-gray-50 p-6 md:p-8 h-screen overflow-y-auto font-sans text-gray-800">
+
+    <div class="max-w-5xl mx-auto space-y-6">
+        
+        <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6 flex flex-col md:flex-row items-center justify-between">
+            <div>
+                <h2 class="text-xl font-bold text-gray-800">Current Epoch Time</h2>
+                <p class="text-sm text-gray-500">The number of seconds since Jan 1, 1970</p>
+            </div>
+            <div class="mt-4 md:mt-0 text-center">
+                <div id="current-epoch" class="text-3xl font-mono font-bold text-indigo-600 tracking-wider">Loading...</div>
+                <div class="text-xs text-gray-400 mt-1" id="current-local"></div>
+            </div>
+        </div>
+
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            
+            <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+                <h3 class="text-lg font-semibold border-b border-gray-100 pb-3 mb-4"><i class="fa-solid fa-arrow-right-to-bracket text-indigo-500 mr-2"></i>Epoch to Human Date</h3>
+                <div class="flex space-x-2 mb-4">
+                    <input type="number" id="input-epoch" class="flex-1 border border-gray-300 rounded-md px-4 py-2 font-mono text-sm focus:ring-indigo-500 focus:border-indigo-500" placeholder="e.g., 1711391000">
+                    <button id="btn-convert-epoch" class="bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded-md text-sm font-medium transition-colors">Convert</button>
+                </div>
+                
+                <div id="output-epoch-date" class="hidden">
+                    <table class="w-full text-sm border-collapse">
+                        <tbody class="divide-y divide-gray-100">
+                            <tr>
+                                <td class="py-2 text-gray-500 font-medium w-1/3">GMT</td>
+                                <td class="py-2 font-mono text-gray-800" id="res-gmt"></td>
+                            </tr>
+                            <tr>
+                                <td class="py-2 text-gray-500 font-medium">Local Time</td>
+                                <td class="py-2 font-mono text-gray-800" id="res-local"></td>
+                            </tr>
+                            <tr>
+                                <td class="py-2 text-gray-500 font-medium">Format</td>
+                                <td class="py-2 font-mono text-xs text-gray-500" id="res-format"></td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+                <h3 class="text-lg font-semibold border-b border-gray-100 pb-3 mb-4"><i class="fa-solid fa-calendar-days text-indigo-500 mr-2"></i>Human Date to Epoch</h3>
+                
+                <div class="grid grid-cols-2 gap-4 mb-4">
+                    <div>
+                        <label class="block text-xs font-medium text-gray-500 mb-1">Date</label>
+                        <input type="date" id="input-date" class="w-full border border-gray-300 rounded-md px-3 py-2 text-sm focus:ring-indigo-500 focus:border-indigo-500">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-medium text-gray-500 mb-1">Time (Local)</label>
+                        <input type="time" id="input-time" step="1" class="w-full border border-gray-300 rounded-md px-3 py-2 text-sm focus:ring-indigo-500 focus:border-indigo-500">
+                    </div>
+                </div>
+                <button id="btn-convert-date" class="w-full bg-indigo-50 text-indigo-700 border border-indigo-200 hover:bg-indigo-100 px-4 py-2 rounded-md text-sm font-medium transition-colors mb-4">Convert to Epoch</button>
+
+                <div id="output-date-epoch" class="hidden bg-gray-50 p-4 rounded-md border border-gray-200">
+                    <div class="flex justify-between items-center mb-2">
+                        <span class="text-sm font-medium text-gray-500">Seconds:</span>
+                        <span class="font-mono text-lg font-bold text-gray-800 select-all" id="res-sec"></span>
+                    </div>
+                    <div class="flex justify-between items-center">
+                        <span class="text-sm font-medium text-gray-500">Milliseconds:</span>
+                        <span class="font-mono text-sm text-gray-600 select-all" id="res-ms"></span>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+    </div>
+
+    <script>
+        // Real-time clock
+        setInterval(() => {
+            const now = new Date();
+            document.getElementById('current-epoch').textContent = Math.floor(now.getTime() / 1000);
+            document.getElementById('current-local').textContent = now.toLocaleString();
+        }, 1000);
+
+        // Epoch to Date Logic
+        document.getElementById('btn-convert-epoch').addEventListener('click', () => {
+            const val = document.getElementById('input-epoch').value.trim();
+            if (!val) return;
+            
+            // Auto-detect seconds vs milliseconds (rough heuristic)
+            let ms = parseInt(val, 10);
+            let format = "Assumed Milliseconds";
+            if (val.length <= 11) {
+                ms = ms * 1000;
+                format = "Assumed Seconds";
+            }
+
+            const d = new Date(ms);
+            document.getElementById('res-gmt').textContent = d.toUTCString();
+            document.getElementById('res-local').textContent = d.toLocaleString();
+            document.getElementById('res-format').textContent = format;
+            document.getElementById('output-epoch-date').classList.remove('hidden');
+        });
+
+        // Date to Epoch Logic
+        // Pre-fill with current date/time
+        const now = new Date();
+        document.getElementById('input-date').value = now.toISOString().split('T')[0];
+        document.getElementById('input-time').value = now.toTimeString().split(' ')[0];
+
+        document.getElementById('btn-convert-date').addEventListener('click', () => {
+            const dVal = document.getElementById('input-date').value;
+            const tVal = document.getElementById('input-time').value || "00:00:00";
+            if (!dVal) return;
+
+            const d = new Date(`${dVal}T${tVal}`);
+            const ms = d.getTime();
+            
+            document.getElementById('res-sec').textContent = Math.floor(ms / 1000);
+            document.getElementById('res-ms').textContent = ms;
+            document.getElementById('output-date-epoch').classList.remove('hidden');
+        });
+    </script>
+</body>
+</html>
