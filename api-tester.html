@@ -1,0 +1,286 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>API Tester</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/json-formatter-js@2.3.4/dist/json-formatter.umd.js"></script>
+</head>
+<body class="bg-white h-screen flex overflow-hidden text-sm text-gray-800 font-sans">
+
+    <aside class="w-64 border-r border-gray-200 bg-gray-50 flex flex-col hidden md:flex">
+        <div class="p-4 border-b border-gray-200 flex justify-between items-center">
+            <span class="font-semibold text-gray-700">Collections</span>
+            <button class="text-gray-400 hover:text-indigo-600"><i class="fa-solid fa-plus"></i></button>
+        </div>
+        <div class="flex-1 overflow-y-auto p-2 space-y-1">
+            <div class="flex items-center p-2 hover:bg-gray-200 rounded cursor-pointer text-gray-600">
+                <i class="fa-solid fa-folder text-yellow-500 mr-2"></i> User Auth API
+            </div>
+            <div class="flex items-center p-2 hover:bg-gray-200 rounded cursor-pointer text-gray-600">
+                <i class="fa-solid fa-folder text-yellow-500 mr-2"></i> Payment Gateway
+            </div>
+        </div>
+        
+        <div class="p-4 border-t border-b border-gray-200 flex justify-between items-center bg-gray-100">
+            <span class="font-semibold text-gray-700">Environments</span>
+            <i class="fa-solid fa-sliders text-gray-400 cursor-pointer hover:text-indigo-600"></i>
+        </div>
+        <div class="p-4">
+            <select class="w-full border border-gray-300 rounded p-1 text-sm focus:ring-indigo-500 focus:border-indigo-500">
+                <option>No Environment</option>
+                <option>Production</option>
+                <option>Staging</option>
+            </select>
+        </div>
+    </aside>
+
+    <main class="flex-1 flex flex-col h-full overflow-hidden">
+        
+        <div class="flex border-b border-gray-200 bg-gray-50 px-2 pt-2">
+            <div class="bg-white border border-b-0 border-gray-200 rounded-t-md px-4 py-2 flex items-center space-x-2">
+                <span class="text-green-600 font-semibold text-xs">GET</span>
+                <span class="font-medium truncate w-32">Untitled Request</span>
+                <i class="fa-solid fa-xmark text-gray-400 hover:text-red-500 cursor-pointer ml-2"></i>
+            </div>
+            <div class="px-4 py-2 text-gray-400 hover:text-gray-600 cursor-pointer">
+                <i class="fa-solid fa-plus"></i>
+            </div>
+        </div>
+
+        <div class="p-4 border-b border-gray-200 flex space-x-2">
+            <select id="req-method" class="border border-gray-300 rounded-md px-3 py-2 bg-gray-50 font-semibold focus:ring-indigo-500 focus:border-indigo-500 w-28">
+                <option value="GET" class="text-green-600">GET</option>
+                <option value="POST" class="text-blue-600">POST</option>
+                <option value="PUT" class="text-orange-600">PUT</option>
+                <option value="PATCH" class="text-yellow-600">PATCH</option>
+                <option value="DELETE" class="text-red-600">DELETE</option>
+            </select>
+            <input type="text" id="req-url" placeholder="https://api.example.com/v1/users" class="flex-1 border border-gray-300 rounded-md px-4 py-2 font-mono text-sm focus:ring-indigo-500 focus:border-indigo-500" value="https://jsonplaceholder.typicode.com/todos/1">
+            <button id="btn-send" class="bg-indigo-600 hover:bg-indigo-700 text-white px-6 py-2 rounded-md font-medium transition-colors">Send</button>
+        </div>
+
+        <div class="flex-1 flex flex-col lg:flex-row overflow-hidden">
+            
+            <div class="flex-1 flex flex-col border-b lg:border-b-0 lg:border-r border-gray-200">
+                <div class="flex border-b border-gray-200 px-4 space-x-6 text-gray-500 font-medium">
+                    <button class="py-3 border-b-2 border-indigo-600 text-indigo-600" id="tab-headers">Headers</button>
+                    <button class="py-3 border-b-2 border-transparent hover:text-gray-800" id="tab-body">Body</button>
+                </div>
+                
+                <div class="flex-1 overflow-y-auto p-4 bg-gray-50" id="req-content-area">
+                    
+                    <div id="panel-headers" class="space-y-2">
+                        <div class="grid grid-cols-12 gap-2 font-semibold text-gray-500 text-xs px-1 mb-2">
+                            <div class="col-span-5">Key</div>
+                            <div class="col-span-6">Value</div>
+                            <div class="col-span-1 text-center">Act</div>
+                        </div>
+                        <div id="headers-container" class="space-y-2">
+                            <div class="header-row grid grid-cols-12 gap-2 items-center">
+                                <input type="text" placeholder="Content-Type" value="application/json" class="header-key col-span-5 border border-gray-300 rounded px-3 py-1.5 font-mono text-xs focus:ring-indigo-500">
+                                <input type="text" placeholder="Value" value="application/json" class="header-value col-span-6 border border-gray-300 rounded px-3 py-1.5 font-mono text-xs focus:ring-indigo-500">
+                                <button class="col-span-1 text-gray-400 hover:text-red-500 text-center delete-header"><i class="fa-solid fa-trash"></i></button>
+                            </div>
+                        </div>
+                        <button id="btn-add-header" class="mt-4 text-indigo-600 hover:text-indigo-800 font-medium text-xs"><i class="fa-solid fa-plus mr-1"></i> Add Header</button>
+                    </div>
+
+                    <div id="panel-body" class="hidden h-full flex flex-col">
+                        <div class="mb-2 flex space-x-4">
+                            <label class="inline-flex items-center text-xs">
+                                <input type="radio" name="body-type" value="json" checked class="text-indigo-600 focus:ring-indigo-500">
+                                <span class="ml-2">raw (JSON)</span>
+                            </label>
+                            <label class="inline-flex items-center text-xs text-gray-400 cursor-not-allowed" title="Not implemented in this demo">
+                                <input type="radio" name="body-type" value="form" disabled>
+                                <span class="ml-2">form-data</span>
+                            </label>
+                        </div>
+                        <textarea id="req-body" class="flex-1 w-full border border-gray-300 rounded-md p-3 font-mono text-xs focus:ring-indigo-500 focus:border-indigo-500 resize-none" placeholder='{\n  "key": "value"\n}'></textarea>
+                    </div>
+
+                </div>
+            </div>
+
+            <div class="flex-1 flex flex-col bg-white">
+                
+                <div class="flex justify-between items-center px-4 py-2 border-b border-gray-200 bg-gray-50">
+                    <div class="font-semibold text-gray-600">Response</div>
+                    <div class="flex space-x-4 text-xs font-mono" id="res-meta" style="display: none;">
+                        <span class="text-gray-500">Status: <span id="res-status" class="font-bold">200 OK</span></span>
+                        <span class="text-gray-500">Time: <span id="res-time" class="text-green-600 font-bold">124 ms</span></span>
+                    </div>
+                </div>
+
+                <div class="flex border-b border-gray-200 px-4 space-x-6 text-gray-500 font-medium">
+                    <button class="py-2 border-b-2 border-indigo-600 text-indigo-600">Body</button>
+                </div>
+
+                <div class="flex-1 overflow-y-auto p-4">
+                    <div id="res-loading" class="hidden text-center text-gray-400 mt-10">
+                        <i class="fa-solid fa-circle-notch fa-spin text-2xl mb-2 text-indigo-500"></i>
+                        <p>Sending Request...</p>
+                    </div>
+                    
+                    <div id="res-empty" class="text-center text-gray-400 mt-10">
+                        <i class="fa-solid fa-paper-plane text-4xl mb-4 text-gray-300"></i>
+                        <p>Enter a URL and click Send to get a response</p>
+                    </div>
+
+                    <div id="res-body-container" class="font-mono text-sm"></div>
+                </div>
+            </div>
+
+        </div>
+    </main>
+
+    <script>
+        // --- UI Logic: Tabs ---
+        const tabHeaders = document.getElementById('tab-headers');
+        const tabBody = document.getElementById('tab-body');
+        const panelHeaders = document.getElementById('panel-headers');
+        const panelBody = document.getElementById('panel-body');
+
+        function switchTab(activeBtn, inactiveBtn, activePanel, inactivePanel) {
+            activeBtn.classList.add('border-indigo-600', 'text-indigo-600');
+            activeBtn.classList.remove('border-transparent', 'text-gray-500');
+            inactiveBtn.classList.remove('border-indigo-600', 'text-indigo-600');
+            inactiveBtn.classList.add('border-transparent', 'text-gray-500');
+            activePanel.classList.remove('hidden');
+            inactivePanel.classList.add('hidden');
+        }
+
+        tabHeaders.addEventListener('click', () => switchTab(tabHeaders, tabBody, panelHeaders, panelBody));
+        tabBody.addEventListener('click', () => switchTab(tabBody, tabHeaders, panelBody, panelHeaders));
+
+        // --- UI Logic: Dynamic Headers ---
+        const btnAddHeader = document.getElementById('btn-add-header');
+        const headersContainer = document.getElementById('headers-container');
+
+        btnAddHeader.addEventListener('click', () => {
+            const row = document.createElement('div');
+            row.className = 'header-row grid grid-cols-12 gap-2 items-center';
+            row.innerHTML = `
+                <input type="text" placeholder="Key" class="header-key col-span-5 border border-gray-300 rounded px-3 py-1.5 font-mono text-xs focus:ring-indigo-500">
+                <input type="text" placeholder="Value" class="header-value col-span-6 border border-gray-300 rounded px-3 py-1.5 font-mono text-xs focus:ring-indigo-500">
+                <button class="col-span-1 text-gray-400 hover:text-red-500 text-center delete-header"><i class="fa-solid fa-trash"></i></button>
+            `;
+            headersContainer.appendChild(row);
+        });
+
+        headersContainer.addEventListener('click', (e) => {
+            if (e.target.closest('.delete-header')) {
+                e.target.closest('.header-row').remove();
+            }
+        });
+
+        // --- API Fetch Logic ---
+        const btnSend = document.getElementById('btn-send');
+        const reqUrl = document.getElementById('req-url');
+        const reqMethod = document.getElementById('req-method');
+        const reqBody = document.getElementById('req-body');
+        
+        // Response Elements
+        const resEmpty = document.getElementById('res-empty');
+        const resLoading = document.getElementById('res-loading');
+        const resBodyContainer = document.getElementById('res-body-container');
+        const resMeta = document.getElementById('res-meta');
+        const resStatus = document.getElementById('res-status');
+        const resTime = document.getElementById('res-time');
+
+        btnSend.addEventListener('click', async () => {
+            const url = reqUrl.value.trim();
+            if (!url) return alert('Please enter a valid URL');
+
+            // 1. Gather Method & Body
+            const method = reqMethod.value;
+            let options = { method: method };
+
+            // 2. Gather Headers
+            const headerRows = document.querySelectorAll('.header-row');
+            const headers = {};
+            headerRows.forEach(row => {
+                const key = row.querySelector('.header-key').value.trim();
+                const val = row.querySelector('.header-value').value.trim();
+                if (key) headers[key] = val;
+            });
+            if (Object.keys(headers).length > 0) options.headers = headers;
+
+            // 3. Attach Body (if not GET/HEAD)
+            if (method !== 'GET' && method !== 'HEAD' && reqBody.value.trim()) {
+                options.body = reqBody.value;
+            }
+
+            // 4. UI State: Loading
+            resEmpty.style.display = 'none';
+            resBodyContainer.innerHTML = '';
+            resMeta.style.display = 'none';
+            resLoading.classList.remove('hidden');
+
+            const startTime = performance.now();
+
+            try {
+                // 5. Execute Fetch
+                const response = await fetch(url, options);
+                const endTime = performance.now();
+                const timeTaken = Math.round(endTime - startTime);
+
+                // 6. Parse Response
+                const contentType = response.headers.get("content-type");
+                let responseData;
+                
+                if (contentType && contentType.includes("application/json")) {
+                    responseData = await response.json();
+                } else {
+                    responseData = await response.text();
+                }
+
+                // 7. Update UI: Meta Data
+                resStatus.textContent = `${response.status} ${response.statusText}`;
+                resStatus.className = response.ok ? 'text-green-600 font-bold' : 'text-red-600 font-bold';
+                resTime.textContent = `${timeTaken} ms`;
+                
+                resLoading.classList.add('hidden');
+                resMeta.style.display = 'flex';
+
+                // 8. Render JSON Tree
+                if (typeof responseData === 'object') {
+                    // Using JSONFormatter library loaded via CDN
+                    const formatter = new JSONFormatter(responseData, 2, {
+                        hoverPreviewEnabled: true,
+                        hoverPreviewArrayCount: 10,
+                        hoverPreviewFieldCount: 5,
+                        theme: 'dark' // Or leave empty for light mode
+                    });
+                    resBodyContainer.appendChild(formatter.render());
+                } else {
+                    // Fallback for raw text/HTML
+                    const pre = document.createElement('pre');
+                    pre.className = "bg-gray-50 p-4 rounded text-xs overflow-x-auto whitespace-pre-wrap text-gray-700 border border-gray-200";
+                    pre.textContent = responseData;
+                    resBodyContainer.appendChild(pre);
+                }
+
+            } catch (error) {
+                // Handle Network/CORS Errors
+                resLoading.classList.add('hidden');
+                resMeta.style.display = 'flex';
+                resStatus.textContent = "Error";
+                resStatus.className = 'text-red-600 font-bold';
+                resTime.textContent = "-";
+                
+                resBodyContainer.innerHTML = `
+                    <div class="bg-red-50 text-red-600 p-4 rounded border border-red-200">
+                        <h4 class="font-bold mb-2">Request Failed</h4>
+                        <p class="text-sm">${error.message}</p>
+                        <p class="text-xs mt-2 opacity-80">Note: Because this is a browser-based tool without a backend proxy, requests to servers that do not support <strong>CORS (Cross-Origin Resource Sharing)</strong> will fail.</p>
+                    </div>
+                `;
+            }
+        });
+    </script>
+</body>
+</html>
