@@ -1,0 +1,153 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Code Formatter</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <script src="https://unpkg.com/prettier@3.0.3/standalone.js"></script>
+    <script src="https://unpkg.com/prettier@3.0.3/plugins/estree.js"></script>
+    <script src="https://unpkg.com/prettier@3.0.3/plugins/babel.js"></script>
+    <script src="https://unpkg.com/prettier@3.0.3/plugins/html.js"></script>
+    <script src="https://unpkg.com/prettier@3.0.3/plugins/postcss.js"></script>
+    <script src="https://unpkg.com/sql-formatter@13.0.0/dist/sql-formatter.min.js"></script>
+</head>
+<body class="bg-gray-50 p-6 md:p-8 h-screen flex flex-col font-sans text-gray-800">
+
+    <div class="max-w-6xl mx-auto w-full flex-1 flex flex-col space-y-4">
+        
+        <div class="flex justify-between items-center bg-white p-4 rounded-lg shadow-sm border border-gray-200">
+            <h2 class="text-xl font-bold text-gray-800 flex items-center">
+                <i class="fa-solid fa-wand-magic-sparkles text-indigo-500 mr-2"></i> Beautifier & Formatter
+            </h2>
+            
+            <div class="flex space-x-3 items-center">
+                <select id="lang-select" class="border border-gray-300 rounded-md px-3 py-1.5 text-sm font-semibold text-gray-700 focus:ring-indigo-500 focus:border-indigo-500 bg-gray-50">
+                    <option value="json">JSON</option>
+                    <option value="javascript">JavaScript</option>
+                    <option value="html">HTML</option>
+                    <option value="css">CSS</option>
+                    <option value="sql">SQL</option>
+                </select>
+                <button id="btn-format" class="bg-indigo-600 hover:bg-indigo-700 text-white px-5 py-1.5 rounded-md text-sm font-medium transition-colors shadow-sm">
+                    Format Code
+                </button>
+            </div>
+        </div>
+
+        <div class="flex-1 bg-white rounded-lg shadow-sm border border-gray-200 flex flex-col relative overflow-hidden">
+            
+            <div class="flex justify-between items-center px-4 py-2 border-b border-gray-100 bg-gray-50">
+                <div class="flex space-x-2 text-xs">
+                    <span class="text-gray-400 font-mono" id="status-bar">Ready</span>
+                </div>
+                <button id="btn-copy" class="text-gray-500 hover:text-indigo-600 text-xs font-medium transition-colors"><i class="fa-regular fa-copy mr-1"></i> Copy to Clipboard</button>
+            </div>
+
+            <textarea id="code-editor" class="flex-1 w-full p-4 font-mono text-sm text-gray-800 resize-none focus:outline-none focus:ring-0 whitespace-pre" placeholder="Paste your raw, minified, or messy code here..."></textarea>
+            
+            <div id="loading" class="hidden absolute inset-0 bg-white/80 backdrop-blur-sm flex items-center justify-center">
+                <i class="fa-solid fa-circle-notch fa-spin text-3xl text-indigo-500"></i>
+            </div>
+        </div>
+
+    </div>
+
+    <script>
+        const editor = document.getElementById('code-editor');
+        const langSelect = document.getElementById('lang-select');
+        const btnFormat = document.getElementById('btn-format');
+        const statusBar = document.getElementById('status-bar');
+        const loading = document.getElementById('loading');
+
+        btnFormat.addEventListener('click', async () => {
+            const rawCode = editor.value;
+            const lang = langSelect.value;
+            
+            if (!rawCode.trim()) return;
+
+            loading.classList.remove('hidden');
+            statusBar.textContent = "Formatting...";
+            statusBar.className = "text-indigo-500 font-mono font-bold";
+
+            try {
+                let formattedCode = "";
+
+                // Native fast JSON formatting
+                if (lang === 'json') {
+                    const parsed = JSON.parse(rawCode);
+                    formattedCode = JSON.stringify(parsed, null, 2);
+                } 
+                // Prettier formatting for Web tech
+                else if (['javascript', 'html', 'css'].includes(lang)) {
+                    const parserMap = {
+                        'javascript': 'babel',
+                        'html': 'html',
+                        'css': 'css'
+                    };
+                    
+                    const pluginsMap = {
+                        'javascript': [prettierPlugins.babel, prettierPlugins.estree],
+                        'html': [prettierPlugins.html],
+                        'css': [prettierPlugins.postcss]
+                    };
+
+                    formattedCode = await prettier.format(rawCode, {
+                        parser: parserMap[lang],
+                        plugins: pluginsMap[lang],
+                        tabWidth: 2,
+                        printWidth: 80,
+                    });
+                }
+                // SQL Formatter library
+                else if (lang === 'sql') {
+                    formattedCode = sqlFormatter.format(rawCode, {
+                        language: 'sql', 
+                        keywordCase: 'upper'
+                    });
+                }
+
+                editor.value = formattedCode;
+                statusBar.textContent = "Formatting successful";
+                statusBar.className = "text-green-600 font-mono";
+
+            } catch (error) {
+                statusBar.textContent = "Syntax Error: Unable to format";
+                statusBar.className = "text-red-600 font-mono font-bold";
+                console.error(error);
+            } finally {
+                loading.classList.add('hidden');
+                // Reset status bar after 3 seconds
+                setTimeout(() => {
+                    if(statusBar.textContent.includes("successful") || statusBar.textContent.includes("Error")) {
+                        statusBar.textContent = "Ready";
+                        statusBar.className = "text-gray-400 font-mono";
+                    }
+                }, 3000);
+            }
+        });
+
+        // Copy functionality
+        document.getElementById('btn-copy').addEventListener('click', function() {
+            editor.select();
+            document.execCommand('copy');
+            const originalText = this.innerHTML;
+            this.innerHTML = '<i class="fa-solid fa-check mr-1 text-green-500"></i> Copied';
+            setTimeout(() => this.innerHTML = originalText, 2000);
+        });
+
+        // Optional: Support Tab key in textarea
+        editor.addEventListener('keydown', function(e) {
+            if (e.key === 'Tab') {
+                e.preventDefault();
+                const start = this.selectionStart;
+                const end = this.selectionEnd;
+                this.value = this.value.substring(0, start) + "  " + this.value.substring(end);
+                this.selectionStart = this.selectionEnd = start + 2;
+            }
+        });
+    </script>
+</body>
+</html>
