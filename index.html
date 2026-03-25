@@ -1,0 +1,181 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Dev Toolkit Pro+</title>
+<script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="flex h-screen bg-gray-100">
+
+<!-- SIDEBAR -->
+<div class="w-64 bg-white shadow p-4">
+  <h2 class="text-xl font-bold mb-4">Dev Toolkit</h2>
+
+  <button onclick="show('api')" class="block w-full text-left p-2 hover:bg-gray-100 rounded">API Tester</button>
+</div>
+
+<!-- MAIN -->
+<div class="flex-1 flex flex-col">
+
+<!-- TABS -->
+<div class="bg-white p-2 flex gap-2 overflow-x-auto" id="tabs"></div>
+
+<!-- CONTENT -->
+<div class="flex-1 p-4 overflow-auto">
+
+<div id="api" class="tool">
+  <div class="flex gap-2 mb-2">
+    <button onclick="newTab()" class="bg-green-600 text-white px-3 py-1 rounded">+ New Tab</button>
+    <button onclick="saveCollection()" class="bg-blue-600 text-white px-3 py-1 rounded">Save</button>
+    <select id="collections" onchange="loadCollection()" class="border p-1"></select>
+  </div>
+
+  <input id="url" placeholder="URL" class="w-full p-2 border mb-2" />
+  <select id="method" class="p-2 border mb-2">
+    <option>GET</option><option>POST</option>
+  </select>
+
+  <textarea id="headers" placeholder='Headers JSON' class="w-full p-2 border mb-2"></textarea>
+  <textarea id="body" placeholder='Body JSON' class="w-full p-2 border mb-2"></textarea>
+
+  <button onclick="callApi()" class="bg-blue-600 text-white px-4 py-2 rounded">Send</button>
+
+  <div class="mt-4">
+    <h3 class="font-bold">Response</h3>
+    <div id="jsonTree" class="bg-white p-4 rounded"></div>
+  </div>
+</div>
+
+</div>
+</div>
+
+<script>
+let tabs = [];
+let activeTab = 0;
+
+function newTab(){
+  tabs.push({url:'',method:'GET',headers:'',body:''});
+  activeTab = tabs.length-1;
+  renderTabs();
+  loadTab();
+}
+
+function renderTabs(){
+  tabsEl.innerHTML='';
+  tabs.forEach((t,i)=>{
+    const btn = document.createElement('button');
+    btn.className = `px-3 py-1 rounded ${i===activeTab?'bg-blue-600 text-white':'bg-gray-200'}`;
+    btn.innerText = 'Tab '+(i+1);
+    btn.onclick=()=>{activeTab=i;loadTab();renderTabs();};
+    tabsEl.appendChild(btn);
+  });
+}
+
+function loadTab(){
+  const t = tabs[activeTab];
+  url.value=t.url;
+  method.value=t.method;
+  headers.value=t.headers;
+  body.value=t.body;
+}
+
+function saveTab(){
+  tabs[activeTab]={url:url.value,method:method.value,headers:headers.value,body:body.value};
+}
+
+async function callApi(){
+  saveTab();
+
+  let h = {};
+  try{h=JSON.parse(headers.value)}catch{}
+
+  const res = await fetch(replaceEnv(url.value),{
+    method:method.value,
+    headers:h,
+    body: method.value==='GET'?null:body.value
+  });
+
+  const data = await res.json().catch(()=>res.text());
+  renderTree(data, jsonTree);
+}
+
+/* JSON TREE */
+function renderTree(obj, container){
+  container.innerHTML='';
+  container.appendChild(createNode(obj));
+}
+
+function createNode(obj){
+  if(typeof obj !== 'object' || obj===null){
+    const span=document.createElement('span');
+    span.innerText=obj;
+    return span;
+  }
+
+  const ul=document.createElement('ul');
+  ul.className='ml-4';
+
+  for(let key in obj){
+    const li=document.createElement('li');
+    const toggle=document.createElement('span');
+    toggle.innerText='▶';
+    toggle.className='cursor-pointer mr-1';
+
+    const content=document.createElement('div');
+    content.style.display='none';
+    content.appendChild(createNode(obj[key]));
+
+    toggle.onclick=()=>{
+      content.style.display = content.style.display==='none'?'block':'none';
+      toggle.innerText = content.style.display==='none'?'▶':'▼';
+    };
+
+    li.appendChild(toggle);
+    li.appendChild(document.createTextNode(key+': '));
+    li.appendChild(content);
+    ul.appendChild(li);
+  }
+  return ul;
+}
+
+/* COLLECTIONS */
+function saveCollection(){
+  localStorage.setItem('collections', JSON.stringify(tabs));
+  loadCollections();
+}
+
+function loadCollections(){
+  const data = JSON.parse(localStorage.getItem('collections')||'[]');
+  collections.innerHTML='';
+  const opt = document.createElement('option'); opt.text='Select Collection';
+  collections.appendChild(opt);
+  data.forEach((_,i)=>{
+    const o=document.createElement('option'); o.value=i; o.text='Collection '+(i+1);
+    collections.appendChild(o);
+  });
+}
+
+function loadCollection(){
+  const data = JSON.parse(localStorage.getItem('collections')||'[]');
+  tabs=data;
+  activeTab=0;
+  renderTabs();
+  loadTab();
+}
+
+/* ENV VARIABLES */
+let env = JSON.parse(localStorage.getItem('env')||'{"baseUrl":"https://api.example.com"}');
+
+function replaceEnv(str){
+  return str.replace(/\{\{(.*?)\}\}/g,(m,k)=>env[k]||m);
+}
+
+window.onload=()=>{
+  newTab();
+  loadCollections();
+};
+</script>
+
+</body>
+</html>
